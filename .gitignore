@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.idea
 *.zip
 
 # Generated build assets (recreated by `npm run assets`)
