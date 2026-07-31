@@ -1,5 +1,5 @@
 import { TimedEffect, integrate, isAlive, type Particle } from './base';
-import { clamp01, pick, rand } from './utils';
+import { clamp01, easeOutCubic, pick, rand } from './utils';
 
 const COLORS = ['#ff453a', '#ff9f0a', '#ffd60a', '#32d74b', '#0a84ff', '#bf5af2', '#ff2d55'];
 
@@ -14,7 +14,7 @@ export class BalloonsEffect extends TimedEffect {
 
   protected override simulate(dt: number): void {
     if (this.progress < 0.55) {
-      this.spawnAccumulator += dt * 9;
+      this.spawnAccumulator += dt * 6;
       while (this.spawnAccumulator >= 1) {
         this.spawnAccumulator -= 1;
         this.particles.push(this.spawn());
@@ -29,8 +29,8 @@ export class BalloonsEffect extends TimedEffect {
       x: rand(0.08, 0.92),
       y: rand(1.1, 1.35),
       vx: rand(-0.015, 0.015),
-      vy: rand(-0.34, -0.2),
-      size: rand(0.1, 0.18),
+      vy: rand(-0.24, -0.15),
+      size: rand(0.11, 0.2),
       rotation: 0,
       spin: 0,
       life: 0,
@@ -47,7 +47,8 @@ export class BalloonsEffect extends TimedEffect {
       const sway = Math.sin(p.seed + p.life * 1.5) * 0.025;
       const x = (p.x + sway) * width;
       const y = p.y * height;
-      const rx = (p.size * height) / 2;
+      const grow = 0.4 + 0.6 * easeOutCubic(Math.min(1, p.life / 0.6));
+      const rx = (p.size * height * grow) / 2;
       const ry = rx * 1.22;
       const tilt = Math.sin(p.seed + p.life * 1.5) * 0.18;
 

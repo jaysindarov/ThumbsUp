@@ -1,5 +1,5 @@
 import { TimedEffect, integrate, isAlive, type Particle } from './base';
-import { clamp01, pick, rand, traceHeart } from './utils';
+import { clamp01, easeOutCubic, pick, rand, traceHeart } from './utils';
 
 const COLORS = ['#ff2d55', '#ff375f', '#ff6482', '#ff8fa3', '#e0245e'];
 
@@ -15,7 +15,7 @@ export class HeartsEffect extends TimedEffect {
   protected override simulate(dt: number): void {
     // Emit for the first 60% of the effect, then let the stragglers rise out.
     if (this.progress < 0.6) {
-      this.spawnAccumulator += dt * 18;
+      this.spawnAccumulator += dt * 11;
       while (this.spawnAccumulator >= 1) {
         this.spawnAccumulator -= 1;
         this.particles.push(this.spawn());
@@ -30,8 +30,8 @@ export class HeartsEffect extends TimedEffect {
       x: rand(0.15, 0.85),
       y: rand(1.0, 1.12),
       vx: rand(-0.02, 0.02),
-      vy: rand(-0.38, -0.2),
-      size: rand(0.05, 0.13),
+      vy: rand(-0.26, -0.15),
+      size: rand(0.06, 0.15),
       rotation: rand(-0.25, 0.25),
       spin: rand(-0.5, 0.5),
       life: 0,
@@ -49,7 +49,9 @@ export class HeartsEffect extends TimedEffect {
       const sway = Math.sin(p.seed + p.life * 2.4) * 0.03;
       const x = (p.x + sway) * width;
       const y = p.y * height;
-      const size = p.size * height;
+      // Each heart swells into its full size rather than popping in at it.
+      const grow = 0.45 + 0.55 * easeOutCubic(Math.min(1, p.life / 0.55));
+      const size = p.size * height * grow;
 
       ctx.globalAlpha = alpha;
       ctx.save();

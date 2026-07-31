@@ -9,17 +9,23 @@
  *     reset the hold — see `graceMs`.
  *  3. After firing, the hand must leave the gesture before the same gesture
  *     can fire again, and `cooldownMs` must elapse regardless.
+ *  4. Two hands never come up at exactly the same moment. A gesture that has a
+ *     two-handed sibling (👍 → 🎆) keeps its hold timer when the second hand
+ *     arrives, and waits `upgradeGraceMs` past the hold before firing — without
+ *     this you get Thumbs Up every time you meant Fireworks.
  *
  * Time is injected rather than read from the clock so tests are deterministic.
  */
 
-import type { ReactionId } from '../shared/reactions';
+import { familyOf, twoHandSibling, type ReactionId } from '../shared/reactions';
 
 export interface GestureMachineOptions {
   holdMs: number;
   cooldownMs: number;
   /** How long a candidate may disappear before the hold resets. */
   graceMs?: number;
+  /** Extra wait before firing a gesture that has a two-handed sibling. */
+  upgradeGraceMs?: number;
   /** Per-reaction opt-out check. */
   isEnabled?: (reaction: ReactionId) => boolean;
 }
@@ -39,6 +45,7 @@ export class GestureMachine {
   private holdMs: number;
   private cooldownMs: number;
   private readonly graceMs: number;
+  private readonly upgradeGraceMs: number;
   private isEnabled: (reaction: ReactionId) => boolean;
 
   private candidate: ReactionId | null = null;
@@ -53,6 +60,9 @@ export class GestureMachine {
     this.cooldownMs = options.cooldownMs;
     // ~4 dropped frames at the 12 fps detection rate.
     this.graceMs = options.graceMs ?? 350;
+    // Long enough to catch a second hand on its way up, short enough that a
+    // genuine one-handed reaction still feels responsive.
+    this.upgradeGraceMs = options.upgradeGraceMs ?? 400;
     this.isEnabled = options.isEnabled ?? (() => true);
   }
 
@@ -88,9 +98,14 @@ export class GestureMachine {
       }
     } else {
       if (accepted !== this.candidate) {
-        // Changing to a different gesture is itself a release of the old one.
+        // Switching within a family (👍 → 🎆, one hand becoming two) is the same
+        // gesture being refined, so the hold carries over. Anything else is a
+        // new gesture and starts from zero.
+        const sameFamily =
+          this.candidate !== null && familyOf(accepted) === familyOf(this.candidate);
+        if (!sameFamily) this.candidateSince = now;
         this.candidate = accepted;
-        this.candidateSince = now;
+        // Either way it is a different reaction, so the previous one is released.
         this.armed = true;
       }
       this.lastSeenAt = now;
@@ -99,7 +114,8 @@ export class GestureMachine {
     const pending = this.candidate;
     if (pending === null) return IDLE;
 
-    const progress = Math.min(1, (now - this.candidateSince) / Math.max(1, this.holdMs));
+    const required = Math.max(1, this.holdMs + (twoHandSibling(pending) ? this.upgradeGraceMs : 0));
+    const progress = Math.min(1, (now - this.candidateSince) / required);
     const canFire = this.armed && progress >= 1 && now - this.lastFiredAt >= this.cooldownMs;
 
     if (!canFire) return { pending, progress, fired: null };

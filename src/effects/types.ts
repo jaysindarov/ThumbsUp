@@ -1,6 +1,13 @@
 import type { ReactionId } from '../shared/reactions';
 
 /**
+ * How an effect enters frame.
+ *  - `grow` starts small and scales up with a slight overshoot.
+ *  - `none` for effects that fill the frame, where scaling would show the edges.
+ */
+export type EntranceStyle = 'grow' | 'none';
+
+/**
  * A reaction animation.
  *
  * Effects work in **normalised coordinates**: x and y in 0..1 with y growing

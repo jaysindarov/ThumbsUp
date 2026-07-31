@@ -21,8 +21,12 @@ import {
 } from './landmarks';
 
 export const SHAPE_THRESHOLDS = {
-  /** Vertical component a thumb must have to count as up/down (unit vector). */
-  THUMB_VERTICALITY: 0.55,
+  /**
+   * Vertical component a thumb must have to count as up/down (unit vector).
+   * Kept fairly loose: people rarely hold a thumb perfectly vertical, and the
+   * curled-fingers test already rules out most other poses.
+   */
+  THUMB_VERTICALITY: 0.45,
   /** Minimum angle between index and middle for a victory sign, in degrees. */
   VICTORY_SPREAD_DEG: 14,
   /** Thumb tips this close (× hand scale) count as touching, for hearts. */

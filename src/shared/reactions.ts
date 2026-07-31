@@ -52,7 +52,7 @@ export const REACTIONS: Record<ReactionId, ReactionDescriptor> = {
     emoji: '👍',
     gesture: 'One thumbs up',
     hands: 1,
-    durationMs: 2400,
+    durationMs: 3400,
   },
   thumbsDown: {
     id: 'thumbsDown',
@@ -60,7 +60,7 @@ export const REACTIONS: Record<ReactionId, ReactionDescriptor> = {
     emoji: '👎',
     gesture: 'One thumbs down',
     hands: 1,
-    durationMs: 2400,
+    durationMs: 3400,
   },
   fireworks: {
     id: 'fireworks',
@@ -127,4 +127,26 @@ export function reactionForShapes(shape: HandShape, hands: number): ReactionId |
   if (shape === 'none' || hands < 1) return null;
   const wanted = hands >= 2 ? 2 : 1;
   return COMBINATIONS.find((c) => c.shape === shape && c.hands === wanted)?.reaction ?? null;
+}
+
+/**
+ * The gesture family a reaction belongs to — i.e. the hand shape you make for
+ * it. Thumbs Up and Fireworks are the same family: same shape, different hand
+ * count. The gesture machine uses this so that raising your second hand
+ * mid-gesture refines what you meant instead of restarting the hold.
+ */
+export function familyOf(reaction: ReactionId): string {
+  if (reaction === 'hearts') return 'heart';
+  return COMBINATIONS.find((c) => c.reaction === reaction)?.shape ?? reaction;
+}
+
+/**
+ * The two-handed reaction this one becomes when the second hand comes up, or
+ * null if there is none. Reactions that have a sibling wait a beat longer
+ * before firing — see `upgradeGraceMs`.
+ */
+export function twoHandSibling(reaction: ReactionId): ReactionId | null {
+  const current = COMBINATIONS.find((c) => c.reaction === reaction);
+  if (!current || current.hands !== 1) return null;
+  return COMBINATIONS.find((c) => c.shape === current.shape && c.hands === 2)?.reaction ?? null;
 }

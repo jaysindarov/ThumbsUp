@@ -98,7 +98,16 @@ tests/          vitest; fixtures/hands.ts builds synthetic hands from a skeleton
    frame* and hand-to-hand relationships. Mixing them up is the classic bug here.
 6. **Timing is settings-driven.** `holdMs`, `cooldownMs`, `minConfidence` come from user settings and
    are live-updated through `GestureMachine.configure()`. Do not hardcode them at call sites.
-7. **Match patterns live in `src/sites.json` only.** `manifest.json` is a template; the build expands
+7. **One-handed gestures are provisional.** Two hands never arrive at the same instant, so a gesture
+   with a two-handed sibling (`twoHandSibling()` in `reactions.ts`) waits `upgradeGraceMs` past the
+   hold before firing, and switching within a *family* (`familyOf()`) carries the hold over instead
+   of restarting it. Remove either and 👍👍 reliably fires Thumbs Up instead of Fireworks.
+8. **Entrances grow, they do not cut.** `TimedEffect` scales the whole effect in when
+   `entrance = 'grow'`; that is only safe for effects whose particles start inside the frame.
+   Effects that spawn off-screen (confetti, fireworks) or fill the frame (rain, lasers) keep
+   `'none'` and grow their particles individually, or the entrance drags off-screen spawn points
+   into view.
+9. **Match patterns live in `src/sites.json` only.** `manifest.json` is a template; the build expands
    every `"__SITES__"` placeholder. Adding a platform is a one-line change.
 
 ## Adding a reaction

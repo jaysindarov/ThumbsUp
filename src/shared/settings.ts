@@ -35,7 +35,9 @@ export const DEFAULT_SETTINGS: Settings = {
   reactions: Object.fromEntries(REACTION_IDS.map((id) => [id, true])) as Record<ReactionId, boolean>,
   holdMs: 700,
   cooldownMs: 2500,
-  minConfidence: 0.55,
+  // Gates on MediaPipe's handedness confidence, which sags when both hands
+  // show the same pose — exactly the two-handed case. Keep it low.
+  minConfidence: 0.4,
   showHud: true,
   sound: false,
   blockedHosts: [],

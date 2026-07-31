@@ -14,7 +14,7 @@ export class ConfettiEffect extends TimedEffect {
 
   protected override simulate(dt: number): void {
     if (this.progress < 0.5) {
-      this.spawnAccumulator += dt * 130;
+      this.spawnAccumulator += dt * 95;
       while (this.spawnAccumulator >= 1) {
         this.spawnAccumulator -= 1;
         this.particles.push(this.spawn());
@@ -45,7 +45,8 @@ export class ConfettiEffect extends TimedEffect {
       const t = p.life / p.maxLife;
       ctx.globalAlpha = clamp01(Math.min(t * 10, (1 - t) * 3));
 
-      const w = p.size * height;
+      // Grow in over the first fifth of a second so pieces do not snap into view.
+      const w = p.size * height * (0.5 + 0.5 * Math.min(1, p.life / 0.2));
       const h = w * 0.55;
       // Fake 3D flutter by squashing width on a sine of the spin.
       const flutter = Math.abs(Math.cos(p.seed + p.life * 8));

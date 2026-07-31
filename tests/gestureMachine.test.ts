@@ -5,30 +5,34 @@ import { GestureMachine } from '../src/vision/gestureMachine';
 const HOLD = 700;
 const COOLDOWN = 2500;
 
+const UPGRADE = 400;
+/** A one-handed gesture that could still become a two-handed one waits longer. */
+const HOLD_WITH_UPGRADE = HOLD + UPGRADE;
+
 const machine = (overrides = {}) =>
   new GestureMachine({ holdMs: HOLD, cooldownMs: COOLDOWN, ...overrides });
 
 describe('GestureMachine', () => {
   it('does not fire before the hold completes', () => {
     const m = machine();
-    expect(m.update(0, 'thumbsUp').fired).toBeNull();
-    expect(m.update(400, 'thumbsUp').fired).toBeNull();
-    expect(m.update(699, 'thumbsUp').fired).toBeNull();
+    expect(m.update(0, 'confetti').fired).toBeNull();
+    expect(m.update(400, 'confetti').fired).toBeNull();
+    expect(m.update(699, 'confetti').fired).toBeNull();
   });
 
   it('fires once the hold completes, and only once', () => {
     const m = machine();
-    m.update(0, 'thumbsUp');
-    expect(m.update(700, 'thumbsUp').fired).toBe('thumbsUp');
-    expect(m.update(800, 'thumbsUp').fired).toBeNull();
-    expect(m.update(5000, 'thumbsUp').fired).toBeNull();
+    m.update(0, 'confetti');
+    expect(m.update(700, 'confetti').fired).toBe('confetti');
+    expect(m.update(800, 'confetti').fired).toBeNull();
+    expect(m.update(5000, 'confetti').fired).toBeNull();
   });
 
   it('reports hold progress for the HUD', () => {
     const m = machine();
-    m.update(0, 'balloons');
-    expect(m.update(350, 'balloons').progress).toBeCloseTo(0.5, 5);
-    expect(m.update(350, 'balloons').pending).toBe('balloons');
+    m.update(0, 'confetti');
+    expect(m.update(350, 'confetti').progress).toBeCloseTo(0.5, 5);
+    expect(m.update(350, 'confetti').pending).toBe('confetti');
   });
 
   it('restarts the hold when the gesture changes', () => {
@@ -74,6 +78,39 @@ describe('GestureMachine', () => {
     m.update(900, 'rain');
     expect(m.update(1600, 'rain').fired).toBeNull(); // 1600 < 700 + 2500
     expect(m.update(3300, 'rain').fired).toBe('rain');
+  });
+
+  it('holds a one-handed gesture longer, in case a second hand is on its way', () => {
+    const m = machine();
+    m.update(0, 'thumbsUp');
+    expect(m.update(HOLD, 'thumbsUp').fired).toBeNull();
+    expect(m.update(HOLD_WITH_UPGRADE, 'thumbsUp').fired).toBe('thumbsUp');
+  });
+
+  it('promotes to the two-handed reaction when the second hand arrives late', () => {
+    const m = machine();
+    m.update(0, 'thumbsUp');
+    // The one-handed gesture is still waiting out its upgrade grace here.
+    expect(m.update(600, 'thumbsUp').fired).toBeNull();
+    // Second thumb arrives. The hold carries over instead of restarting, so
+    // Fireworks fires straight away — 800 ms of holding already covers it.
+    expect(m.update(800, 'fireworks').fired).toBe('fireworks');
+  });
+
+  it('does not carry the hold across unrelated gestures', () => {
+    const m = machine();
+    m.update(0, 'thumbsUp');
+    m.update(600, 'hearts');
+    expect(m.update(900, 'hearts').fired).toBeNull();
+    expect(m.update(1300, 'hearts').fired).toBe('hearts');
+  });
+
+  it('can still fire the two-handed reaction after the one-handed one fired', () => {
+    const m = machine({ cooldownMs: 0 });
+    m.update(0, 'thumbsUp');
+    expect(m.update(HOLD_WITH_UPGRADE, 'thumbsUp').fired).toBe('thumbsUp');
+    // Raising the second hand afterwards is a new reaction, so it re-arms.
+    expect(m.update(1200, 'fireworks').fired).toBe('fireworks');
   });
 
   it('ignores reactions the user has switched off', () => {
