@@ -51,30 +51,70 @@ Lead with the problem ("Apple ships this only on Apple silicon Macs") — it is 
 Best screenshot: a two-person call where the *remote* participant's view shows the confetti. That is
 the claim people will not believe until they see it.
 
-## Review questionnaire — prepared answers
+## Privacy practices tab — paste these verbatim
 
-Reviewers ask these, and a weak answer here is the usual cause of a rejection.
+Every field below is required before the item can be published. A vague answer here is the usual
+cause of rejection, so each one names the specific feature that needs the permission.
 
-**Single purpose**
-> Recognise hand gestures from the user's existing video-call camera feed and draw the matching
-> reaction animation into that feed, so other call participants can see it.
+### Single purpose
 
-**Why `storage`** — persist user settings (enabled reactions, hold time, sensitivity, per-site
-opt-outs).
+> ThumbsUp recognises hand gestures in the user's existing video-call camera feed and composites the
+> matching reaction animation into that feed, so the other participants in the call can see it. It
+> does one thing: turn a hand gesture into an on-camera reaction during a video call.
 
-**Why `activeTab`** — the popup reports whether the extension is active on the current tab and can
-play a test reaction there. Used only in response to the user opening the popup.
+### Justification — `activeTab`
 
-**Why host permissions on those sites** — the extension must run in the page to modify the outgoing
-camera stream. The list is limited to video-call services; no broad `<all_urls>` access is
-requested.
+> Used only when the user opens the extension's popup. The popup reads the active tab's URL to show
+> whether ThumbsUp is running on that site and to offer a per-site "Disable on this site" toggle,
+> and it sends a message to that tab when the user presses a "Test" button to preview a reaction.
+> No other tab is accessed, and nothing happens without the user opening the popup and clicking.
 
-**Remote code** — none. The MediaPipe WebAssembly runtime and the hand-landmark model ship inside
-the package. The extension makes no network requests at runtime.
+### Justification — host permissions
 
-**Data usage disclosures** — tick nothing. Certify that you do not collect or transmit user data,
-and that data is not sold or used for unrelated purposes. Link `PRIVACY.md` (host it, e.g. on
-GitHub Pages) as the privacy policy URL.
+> The extension's whole function is to draw reactions into the outgoing camera stream of a video
+> call, which is only possible from inside the calling page itself. The content script wraps the
+> camera stream the site has already been granted, composites an animation onto it with a canvas,
+> and returns it to the site.
+>
+> Access is limited to a fixed list of video-call services (Google Meet, Zoom, WhatsApp Web,
+> Microsoft Teams, Webex, Discord, Whereby, Jitsi Meet, Slack, Around, Gather). No broad
+> `<all_urls>` access is requested, and the extension does nothing on any other site. Users can
+> additionally disable it per site from the popup.
+
+### Justification — `storage`
+
+> Stores the user's own settings only: whether the extension is enabled, which of the eight
+> reactions are switched on, gesture hold time, cooldown, detection sensitivity, whether to show the
+> on-screen indicator, and any sites the user has disabled it on. `chrome.storage.sync` is used so
+> these preferences follow the user between their own Chrome profiles. No personal data, browsing
+> history, or call content is stored.
+
+### Remote code
+
+Select **"No, I am not using remote code."** The MediaPipe WebAssembly runtime and the hand-landmark
+model are bundled in the package (`wasm/`, `models/`), and the extension makes no network requests
+at runtime. If a free-text box appears anyway:
+
+> The extension executes no remote code. The hand-tracking runtime (WebAssembly) and the model file
+> are included in the package and loaded from extension-local URLs. There are no runtime network
+> requests, no CDN, no eval of fetched content.
+
+### Data usage
+
+Declare that **no** user data is collected — leave every category in the table unticked — then tick
+all three certifications:
+
+- I do not sell or transfer user data to third parties, outside of the approved use cases
+- I do not use or transfer user data for purposes that are unrelated to my item's single purpose
+- I do not use or transfer user data to determine creditworthiness or for lending purposes
+
+Privacy policy URL: a public link to `PRIVACY.md` (GitHub Pages, or the rendered file on GitHub).
+
+## Settings page — before publishing
+
+- Enter the publisher contact email.
+- Click through the verification email Google sends; the item cannot be published until the address
+  shows as verified.
 
 ## Console warnings are not defects
 
