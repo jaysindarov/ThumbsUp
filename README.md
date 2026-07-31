@@ -43,16 +43,38 @@ Native desktop apps are out of reach for a browser extension — use the web ver
 
 ## Install
 
-Not on the Chrome Web Store yet. To run it from source:
+Requires Chrome 111 or newer.
+
+### If you just want to use it
+
+Coming to the Chrome Web Store — one click, auto-updates, nothing to build.
+
+Until then you need the developer install below. Be warned that Chrome treats unpacked extensions as
+developer tools: it shows a warning banner on every launch and can disable them, so it is not a
+setup to hand to someone else.
+
+### Developer install
 
 ```bash
-npm install && npm run build
+npm install
+npm run build
 ```
 
-Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select the
-`dist/` folder.
+Then:
 
-Chrome 111 or newer.
+1. Open `chrome://extensions`
+2. Turn on **Developer mode** (top-right)
+3. Click **Load unpacked**
+4. Select the **`dist`** folder — not the project root, not `src/`
+
+`dist/` is the only folder Chrome can read. The project root has no `manifest.json`, and `src/` holds
+TypeScript plus a manifest template with unfilled placeholders.
+
+**This is a one-time compile, not a server.** Once loaded, the extension keeps working after you
+close the terminal, quit Chrome, or reboot — Node is not involved at runtime. Only rebuild after
+editing `src/`, then press the reload arrow on the extension card.
+
+Do not delete or move `dist/` afterwards: Chrome references that exact path.
 
 ## Privacy
 
@@ -64,6 +86,8 @@ Everything runs locally.
 - The extension only runs on the video-call sites listed above, and you can disable it per site or
   entirely from the popup.
 
+Full policy: [PRIVACY.md](PRIVACY.md).
+
 ## Development
 
 ```bash
@@ -71,10 +95,15 @@ npm run dev        # rebuild on change
 npm test           # unit tests for the gesture recognition layer
 npm run typecheck
 npm run lint
+npm run package    # build + release/thumbsup-<version>.zip for the Web Store
 ```
 
-Architecture, invariants and how to add a new reaction are documented in
-[CLAUDE.md](CLAUDE.md).
+After a rebuild, reload the call tab for content-script changes, or hit the reload arrow on the
+extension card at `chrome://extensions` for manifest and service-worker changes.
+
+Architecture, invariants and how to add a new reaction are documented in [CLAUDE.md](CLAUDE.md).
+Publishing — listing copy, assets, and prepared answers for the store review questionnaire — is in
+[docs/STORE.md](docs/STORE.md).
 
 ## License
 
