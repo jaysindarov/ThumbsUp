@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ThumbsUp detector</title>
+    <!--
+      Hidden, zero-size extension page mounted as an iframe in the host page.
+      It exists purely so MediaPipe can load WebAssembly under the extension's
+      CSP instead of the host page's.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

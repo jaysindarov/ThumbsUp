@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.zip
+
+# Generated build assets (recreated by `npm run assets`)
+public/models/
+public/wasm/
+public/icons/
+
+.DS_Store
+*.log

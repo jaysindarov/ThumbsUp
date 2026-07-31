@@ -1,0 +1,26 @@
+{
+  "$comment": [
+    "Single source of truth for where ThumbsUp runs. The build script expands",
+    "the \"__SITES__\" placeholders in manifest.json with this list, so a new",
+    "platform is a one-line change here.",
+    "",
+    "Keep this list narrow: broad host permissions on a camera-touching",
+    "extension are a hard sell in Chrome Web Store review, and users should not",
+    "have to trust us on pages that have nothing to do with video calls."
+  ],
+  "matches": [
+    "https://meet.google.com/*",
+    "https://*.zoom.us/*",
+    "https://*.zoom.com/*",
+    "https://web.whatsapp.com/*",
+    "https://teams.microsoft.com/*",
+    "https://teams.live.com/*",
+    "https://*.webex.com/*",
+    "https://discord.com/*",
+    "https://*.whereby.com/*",
+    "https://meet.jit.si/*",
+    "https://app.slack.com/*",
+    "https://*.around.co/*",
+    "https://*.gather.town/*"
+  ]
+}
