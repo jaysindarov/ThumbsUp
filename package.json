@@ -7,6 +7,7 @@
   "scripts": {
     "assets": "node scripts/fetch-mediapipe-assets.mjs && node scripts/gen-icons.mjs",
     "build": "npm run assets && node scripts/build.mjs",
+    "package": "npm run build && node scripts/package.mjs",
     "dev": "npm run assets && node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

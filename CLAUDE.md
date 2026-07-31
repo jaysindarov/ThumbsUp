@@ -120,6 +120,7 @@ Nothing in the pipeline, popup or manifest needs touching — the popup renders 
 npm install         # once
 npm run build       # stage assets, build dist/  (load dist/ as an unpacked extension)
 npm run dev         # same, with watch
+npm run package     # build + release/thumbsup-<version>.zip for the Web Store
 npm test            # vitest — the vision layer
 npm run typecheck   # tsc --noEmit
 npm run lint

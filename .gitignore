@@ -10,3 +10,4 @@ public/icons/
 
 .DS_Store
 *.log
+release/
