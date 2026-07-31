@@ -7,18 +7,33 @@
 
 import type { HandShape } from '../shared/reactions';
 import {
+  BEND,
   LM,
   at,
   distance2d,
+  fingerBendDeg,
   fingerDirection,
   handScale,
-  isCurled,
-  isExtended,
   sub,
   angleBetween,
+  type FingerName,
   type Hand,
   type Landmark,
 } from './landmarks';
+
+/** A finger is extended, curled, or too ambiguous to call. */
+export type FingerState = 'extended' | 'curled' | 'between';
+
+const OTHER_FINGERS = ['index', 'middle', 'ring', 'pinky'] as const;
+
+export function fingerState(world: readonly Landmark[], finger: FingerName): FingerState {
+  const bend = fingerBendDeg(world, finger);
+  const extendedLimit = finger === 'thumb' ? BEND.THUMB_EXTENDED : BEND.EXTENDED;
+  const curledLimit = finger === 'thumb' ? BEND.THUMB_CURLED : BEND.CURLED;
+  if (bend < extendedLimit) return 'extended';
+  if (bend > curledLimit) return 'curled';
+  return 'between';
+}
 
 export const SHAPE_THRESHOLDS = {
   /**
@@ -37,6 +52,13 @@ export const SHAPE_THRESHOLDS = {
   HEART_VERTICAL_OFFSET: 0.25,
   /** Wrists must be at least this far apart horizontally (× hand scale). */
   HEART_WRIST_SPREAD: 0.5,
+  /**
+   * How many of the four fingers must read as curled for a thumbs up/down.
+   * Not all four: one finger sitting in the ambiguous band is enough to drop
+   * an otherwise perfect gesture, and that is the difference between "works"
+   * and "works sometimes".
+   */
+  FIST_MIN_CURLED: 3,
 } as const;
 
 /**
@@ -46,25 +68,33 @@ export const SHAPE_THRESHOLDS = {
 export function classifyHandShape(hand: Hand): HandShape {
   const { world, landmarks } = hand;
 
-  const thumbExtended = isExtended(world, 'thumb');
-  const indexExtended = isExtended(world, 'index');
-  const middleExtended = isExtended(world, 'middle');
-  const ringCurled = isCurled(world, 'ring');
-  const pinkyCurled = isCurled(world, 'pinky');
-  const middleCurled = isCurled(world, 'middle');
-  const indexCurled = isCurled(world, 'index');
-  const pinkyExtended = isExtended(world, 'pinky');
+  const state = {
+    thumb: fingerState(world, 'thumb'),
+    index: fingerState(world, 'index'),
+    middle: fingerState(world, 'middle'),
+    ring: fingerState(world, 'ring'),
+    pinky: fingerState(world, 'pinky'),
+  } as const;
 
-  // 👍 / 👎 — thumb out and vertical, all four fingers folded into the palm.
-  if (thumbExtended && indexCurled && middleCurled && ringCurled && pinkyCurled) {
+  const curledCount = OTHER_FINGERS.filter((f) => state[f] === 'curled').length;
+  const anyExtended = OTHER_FINGERS.some((f) => state[f] === 'extended');
+
+  const indexExtended = state.index === 'extended';
+  const middleExtended = state.middle === 'extended';
+  const pinkyExtended = state.pinky === 'extended';
+
+  // 👍 / 👎 — thumb out and vertical, fingers folded into the palm.
+  // Positive conditions require certainty; negative ones only require the
+  // absence of the opposite, so an ambiguous finger cannot veto the gesture.
+  if (state.thumb !== 'curled' && curledCount >= SHAPE_THRESHOLDS.FIST_MIN_CURLED && !anyExtended) {
     const dir = fingerDirection(landmarks, 'thumb');
     if (dir.y <= -SHAPE_THRESHOLDS.THUMB_VERTICALITY) return 'thumbUp';
     if (dir.y >= SHAPE_THRESHOLDS.THUMB_VERTICALITY) return 'thumbDown';
     return 'none';
   }
 
-  // ✌️ — index and middle up and spread, ring and pinky folded.
-  if (indexExtended && middleExtended && ringCurled && pinkyCurled) {
+  // ✌️ — index and middle up and spread, ring and pinky not up.
+  if (indexExtended && middleExtended && state.ring !== 'extended' && state.pinky !== 'extended') {
     const spread = angleBetween(
       sub(at(landmarks, LM.INDEX_TIP), at(landmarks, LM.INDEX_MCP)),
       sub(at(landmarks, LM.MIDDLE_TIP), at(landmarks, LM.MIDDLE_MCP)),
@@ -72,12 +102,29 @@ export function classifyHandShape(hand: Hand): HandShape {
     return spread >= SHAPE_THRESHOLDS.VICTORY_SPREAD_DEG ? 'victory' : 'none';
   }
 
-  // 🤘 — index and pinky up, middle and ring folded.
-  if (indexExtended && pinkyExtended && middleCurled && ringCurled) {
+  // 🤘 — index and pinky up, middle and ring not up.
+  if (indexExtended && pinkyExtended && state.middle !== 'extended' && state.ring !== 'extended') {
     return 'rock';
   }
 
   return 'none';
+}
+
+/**
+ * Per-finger bend readings for the debug log. This is what to look at when a
+ * gesture "works sometimes": a finger parked in the `between` band, or a thumb
+ * whose bend sits right on `THUMB_EXTENDED`, is the usual culprit.
+ */
+export function handDiagnostics(hand: Hand): Record<string, string> {
+  const out: Record<string, string> = {
+    shape: classifyHandShape(hand),
+    score: hand.score.toFixed(2),
+    thumbY: fingerDirection(hand.landmarks, 'thumb').y.toFixed(2),
+  };
+  for (const finger of ['thumb', ...OTHER_FINGERS] as const) {
+    out[finger] = `${fingerBendDeg(hand.world, finger).toFixed(0)}° ${fingerState(hand.world, finger)}`;
+  }
+  return out;
 }
 
 /**

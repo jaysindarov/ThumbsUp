@@ -28,6 +28,8 @@ export interface Settings {
   sound: boolean;
   /** Hosts the extension must not touch, e.g. `["example.com"]`. */
   blockedHosts: string[];
+  /** Log per-finger bend readings to the detector console, for tuning. */
+  debug: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -41,6 +43,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showHud: true,
   sound: false,
   blockedHosts: [],
+  debug: false,
 };
 
 const STORAGE_KEY = 'settings';
@@ -66,6 +69,7 @@ export function normalizeSettings(raw: unknown): Settings {
     blockedHosts: Array.isArray(input.blockedHosts)
       ? input.blockedHosts.filter((h): h is string => typeof h === 'string')
       : [...DEFAULT_SETTINGS.blockedHosts],
+    debug: typeof input.debug === 'boolean' ? input.debug : DEFAULT_SETTINGS.debug,
   };
 }
 

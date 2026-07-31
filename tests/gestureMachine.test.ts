@@ -113,6 +113,26 @@ describe('GestureMachine', () => {
     expect(m.update(1200, 'fireworks').fired).toBe('fireworks');
   });
 
+  it('fires the two-handed reaction when a hand drops out just before firing', () => {
+    const m = machine();
+    m.update(0, 'fireworks');
+    m.update(300, 'fireworks');
+    // One hand turns and the classifier falls back to the one-handed reading…
+    m.update(700, 'thumbsUp');
+    m.update(1000, 'thumbsUp');
+    // …but two hands were up moments ago, so that is what the user meant.
+    expect(m.update(1100, 'thumbsUp').fired).toBe('fireworks');
+  });
+
+  it('does not resurrect a two-handed reaction from an earlier gesture', () => {
+    const m = machine({ cooldownMs: 0 });
+    m.update(0, 'fireworks');
+    expect(m.update(700, 'fireworks').fired).toBe('fireworks');
+    m.update(2000, null);
+    m.update(2100, 'thumbsUp');
+    expect(m.update(3300, 'thumbsUp').fired).toBe('thumbsUp');
+  });
+
   it('ignores reactions the user has switched off', () => {
     const m = machine({ isEnabled: (id: string) => id !== 'rain' });
     m.update(0, 'rain');

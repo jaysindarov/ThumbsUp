@@ -17,8 +17,13 @@ npm version patch      # or minor / major — the manifest version comes from pa
 npm run package        # → release/thumbsup-<version>.zip
 ```
 
-Upload the zip in the developer console. The store rejects a zip whose root is a folder — the
-packaging script zips the *contents* of `dist/`, which is correct.
+`npm run package` refuses to produce a zip if anything the store rejects is present: a version
+mismatch between `package.json` and the built manifest, an over-length name or description, a
+missing 128px icon, shipped source maps, `<all_urls>`, a leftover `key` field, a manifest entry
+pointing at a file that is not in the build, or a missing model/WASM asset.
+
+Upload the zip in the developer console. The store rejects a zip whose root is a folder — the script
+zips the *contents* of `dist/`, which is correct.
 
 Version numbers must increase on every upload; the store will not accept a repeat.
 
@@ -71,6 +76,26 @@ the package. The extension makes no network requests at runtime.
 and that data is not sold or used for unrelated purposes. Link `PRIVACY.md` (host it, e.g. on
 GitHub Pages) as the privacy policy URL.
 
+## Console warnings are not defects
+
+Two warnings appear under the extension's **Errors** button in `chrome://extensions`:
+
+```
+gl_context.cc:1072] OpenGL error checking is disabled
+landmark_projection_calculator.cc:189] Using NORM_RECT without IMAGE_DIMENSIONS is only
+supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+```
+
+Both come from MediaPipe's own WebAssembly runtime writing to stderr, which Chrome collects and
+attributes to the extension. The first is informational from the GPU delegate. The second fires
+because detection frames are 16:9 rather than square; if it were genuinely breaking the landmark
+projection, no gesture would ever be recognised.
+
+Neither affects the listing — reviewers do not read `chrome://extensions`. Removing the second one
+means letterboxing the detection frame to a square and un-padding the landmark coordinates before
+classification, which is a real change to `videoPipeline.ts` and `detector/main.ts` and should not be
+attempted just to quiet a log line.
+
 ## Expect extra scrutiny
 
 Anything touching a camera stream draws a closer look, and patching `getUserMedia` looks alarming
@@ -81,6 +106,24 @@ without context. Say plainly in the reviewer notes:
 > analysis is local; nothing is transmitted.
 
 First review typically takes a few days; updates are usually faster.
+
+## Submission form — values to paste
+
+| Field | Value |
+| --- | --- |
+| Package | `release/thumbsup-1.0.0.zip` |
+| Visibility | **Unlisted** for the first release |
+| Distribution | All regions |
+| Category | Social & Communication |
+| Language | English |
+| Privacy policy URL | hosted copy of `PRIVACY.md` (GitHub Pages, or the file's GitHub URL) |
+| Contains ads | No |
+| Uses remote code | **No** |
+| Collects user data | **No** — tick nothing in the data-usage table |
+| Certifications | Not selling data · not using it for unrelated purposes · not using it for creditworthiness |
+
+The privacy policy must be a working public URL before the listing can be published. Enable GitHub
+Pages on the repository, or link the rendered `PRIVACY.md` on GitHub.
 
 ## Suggested rollout
 

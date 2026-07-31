@@ -5,6 +5,7 @@
   "description": "Hand-gesture reactions for any video call. The macOS Reactions feature, on every platform Chrome runs on.",
   "version": "0.0.0",
   "minimum_chrome_version": "111",
+  "homepage_url": "https://github.com/jaysindarov/ThumbsUp",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

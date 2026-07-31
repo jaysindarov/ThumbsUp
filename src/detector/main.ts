@@ -11,6 +11,7 @@ import { FilesetResolver, HandLandmarker, type HandLandmarkerResult } from '@med
 import type { FromDetectorMessage, ToDetectorMessage } from '../shared/protocol';
 import { DEFAULT_SETTINGS, type Settings } from '../shared/settings';
 import { classifyFrame } from '../vision/classifier';
+import { handDiagnostics } from '../vision/handShape';
 import { GestureMachine } from '../vision/gestureMachine';
 import type { Hand, Landmark } from '../vision/landmarks';
 
@@ -31,6 +32,7 @@ class Detector {
   private busy = false;
   /** detectForVideo() requires strictly increasing timestamps. */
   private lastTimestamp = 0;
+  private lastLogAt = 0;
 
   start(): void {
     window.addEventListener('message', (event) => void this.handleMessage(event));
@@ -117,6 +119,7 @@ class Detector {
   private emit(hands: Hand[], timestamp: number): void {
     const frame = classifyFrame(hands, this.settings.minConfidence);
     const gesture = this.machine.update(timestamp, frame.reaction);
+    this.logDiagnostics(hands, frame.reaction, timestamp);
     this.post({
       type: 'result',
       hands: frame.hands,
@@ -124,6 +127,22 @@ class Detector {
       pending: gesture.pending,
       pendingProgress: gesture.progress,
       fired: gesture.fired,
+    });
+  }
+
+  /**
+   * Throttled per-finger readout, off unless the user turns on debug logging.
+   * This is the tool for answering "why did that gesture not register": look
+   * for a finger reported as `between`, or a thumb bend hovering at the
+   * extended threshold.
+   */
+  private logDiagnostics(hands: Hand[], reaction: string | null, timestamp: number): void {
+    if (!this.settings.debug) return;
+    if (timestamp - this.lastLogAt < 500) return;
+    this.lastLogAt = timestamp;
+    console.log('[ThumbsUp]', {
+      reaction,
+      hands: hands.map(handDiagnostics),
     });
   }
 

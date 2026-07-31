@@ -46,6 +46,8 @@ export class GestureMachine {
   private cooldownMs: number;
   private readonly graceMs: number;
   private readonly upgradeGraceMs: number;
+  /** When each reaction was last seen, used to resolve one-vs-two-hand flicker. */
+  private readonly seenAt = new Map<ReactionId, number>();
   private isEnabled: (reaction: ReactionId) => boolean;
 
   private candidate: ReactionId | null = null;
@@ -79,6 +81,7 @@ export class GestureMachine {
     this.candidateSince = 0;
     this.lastSeenAt = 0;
     this.armed = true;
+    this.seenAt.clear();
   }
 
   /**
@@ -109,6 +112,7 @@ export class GestureMachine {
         this.armed = true;
       }
       this.lastSeenAt = now;
+      this.seenAt.set(accepted, now);
     }
 
     const pending = this.candidate;
@@ -122,6 +126,27 @@ export class GestureMachine {
 
     this.lastFiredAt = now;
     this.armed = false;
-    return { pending, progress: 1, fired: pending };
+    return { pending, progress: 1, fired: this.resolveHandCount(pending, now) };
+  }
+
+  /**
+   * Decide the one-hand vs two-hand variant at fire time.
+   *
+   * The frame classifier only reports a two-handed reaction when *both* hands
+   * read cleanly in the same frame. A hand that turns, or drifts to the edge of
+   * frame, drops out for a few frames and the reading collapses back to the
+   * one-handed variant — so 👍👍 fires Thumbs Up.
+   *
+   * The rule: if two hands were seen at any point during *this* hold, two hands
+   * is what the user meant. Losing a hand for a few frames is routine; putting
+   * a second hand up by accident is not. Scoping it to the current hold rather
+   * than a fixed time window makes it self-limiting — releasing the gesture
+   * starts a new hold, and older sightings stop counting automatically.
+   */
+  private resolveHandCount(pending: ReactionId, _now: number): ReactionId {
+    const sibling = twoHandSibling(pending);
+    if (!sibling) return pending;
+    const seen = this.seenAt.get(sibling);
+    return seen !== undefined && seen >= this.candidateSince ? sibling : pending;
   }
 }

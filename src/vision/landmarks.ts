@@ -131,15 +131,26 @@ export function fingerBendDeg(world: readonly Landmark[], finger: FingerName): n
   return angleBetween(v1, v2) + angleBetween(v2, v3);
 }
 
-/** Bend thresholds, in summed degrees. Tuned against webcam captures. */
+/**
+ * Bend thresholds, in summed degrees.
+ *
+ * The gap between EXTENDED and CURLED is deliberate: a finger in between is
+ * reported as neither, and callers must treat that as "unknown" rather than as
+ * the opposite state. Removing the gap makes recognition flicker frame to
+ * frame, which reads to the user as "it works sometimes".
+ */
 export const BEND = {
   /** Below this a finger counts as extended. */
   EXTENDED: 55,
   /** Above this a finger counts as curled. */
   CURLED: 95,
-  /** The thumb's two joints bend less than the other fingers'. */
-  THUMB_EXTENDED: 45,
-  THUMB_CURLED: 70,
+  /**
+   * The thumb needs its own, looser pair. A real thumbs-up thumb is not
+   * straight — the CMC→MCP→IP chain keeps 30–60° of bend even when the user
+   * would call it fully extended.
+   */
+  THUMB_EXTENDED: 60,
+  THUMB_CURLED: 95,
 } as const;
 
 export function isExtended(world: readonly Landmark[], finger: FingerName): boolean {

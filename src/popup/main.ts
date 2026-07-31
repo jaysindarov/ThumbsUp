@@ -21,6 +21,7 @@ const cooldownValue = el<HTMLOutputElement>('cooldown-value');
 const sensitivity = el<HTMLInputElement>('sensitivity');
 const sensitivityValue = el<HTMLOutputElement>('sensitivity-value');
 const hudToggle = el<HTMLInputElement>('hud');
+const debugToggle = el<HTMLInputElement>('debug');
 const blockButton = el<HTMLButtonElement>('block-site');
 const statusBox = el<HTMLElement>('status');
 const statusText = el<HTMLElement>('status-text');
@@ -90,6 +91,7 @@ function render(): void {
   sensitivity.value = String(Math.round(settings.minConfidence * 100));
   sensitivityValue.value = `${Math.round(settings.minConfidence * 100)}%`;
   hudToggle.checked = settings.showHud;
+  debugToggle.checked = settings.debug;
 
   for (const id of REACTION_IDS) {
     const input = document.getElementById(`reaction-${id}`);
@@ -109,6 +111,7 @@ function render(): void {
 function wireEvents(): void {
   master.addEventListener('change', () => void update({ enabled: master.checked }));
   hudToggle.addEventListener('change', () => void update({ showHud: hudToggle.checked }));
+  debugToggle.addEventListener('change', () => void update({ debug: debugToggle.checked }));
   hold.addEventListener('input', () => {
     holdValue.value = `${(Number(hold.value) / 1000).toFixed(2)}s`;
   });
